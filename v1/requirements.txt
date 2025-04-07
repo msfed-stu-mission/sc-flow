@@ -1,0 +1,7 @@
+langchain-community
+langchain
+langchain-openai
+langchain-experimental
+azure-storage-blob
+neo4j
+pypdf

@@ -1,0 +1,161 @@
+id: security_classification_flow
+name: Security Classifier
+inputs:
+  document_contents:
+    type: string
+    default: ""
+    is_chat_input: false
+  scg_dataset:
+    type: string
+    default: ""
+    is_chat_input: false
+  update_grounding:
+    type: bool
+    is_chat_input: false
+outputs:
+  response:
+    type: string
+    reference: ${security_classifier.output}
+nodes:
+- name: create_graph
+  type: python
+  source:
+    type: code
+    path: create_graph.py
+  inputs:
+    neo4j_conn: neo4j
+    azureml_conn: azureml
+    aoai_conn: aoai-dev
+    dataset_version: "1"
+    embedding_deployment: text-embedding-ada-002
+    model_deployment: gpt-4o
+    scg_dataset: ${inputs.scg_dataset}
+  activate:
+    when: ${inputs.update_grounding}
+    is: true
+  use_variants: false
+- name: gpt4o_unclass_expert
+  type: llm
+  source:
+    type: code
+    path: gpt4o_unclass_expert.jinja2
+  inputs:
+    deployment_name: gpt-4o
+    temperature: 1
+    top_p: 1
+    response_format:
+      type: text
+    context: ${scg_graph_expert.output}
+    text: ${inputs.document_contents}
+  provider: AzureOpenAI
+  connection: aoai-dev
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${inputs.update_grounding}
+    is: false
+  use_variants: false
+- name: gpt4o_secret_expert
+  type: llm
+  source:
+    type: code
+    path: gpt4o_secret_expert.jinja2
+  inputs:
+    deployment_name: gpt-4o
+    temperature: 1
+    top_p: 1
+    response_format:
+      type: text
+    context: ${scg_graph_expert.output}
+    text: ${inputs.document_contents}
+  provider: AzureOpenAI
+  connection: aoai-dev
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${inputs.update_grounding}
+    is: false
+  use_variants: false
+- name: scg_graph_expert
+  type: python
+  source:
+    type: code
+    path: scg_graph_expert.py
+  inputs:
+    neo4j_conn: neo4j
+    aoai_conn: aoai-dev
+    s_query: ${get_s_details_prompt.output}
+    ts_query: ${get_ts_details_prompt.output}
+    unclass_query: ${get_unclass_details_prompt.output}
+  activate:
+    when: ${inputs.update_grounding}
+    is: false
+  use_variants: false
+- name: get_ts_details_prompt
+  type: prompt
+  source:
+    type: code
+    path: get_ts_details_prompt.jinja2
+  inputs: {}
+  use_variants: false
+- name: get_s_details_prompt
+  type: prompt
+  source:
+    type: code
+    path: get_s_details_prompt.jinja2
+  inputs: {}
+  use_variants: false
+- name: get_unclass_details_prompt
+  type: prompt
+  source:
+    type: code
+    path: get_unclass_details_prompt.jinja2
+  inputs: {}
+  use_variants: false
+- name: gpt4o_top_secret_expert
+  type: llm
+  source:
+    type: code
+    path: gpt4o_top_secret_expert.jinja2
+  inputs:
+    deployment_name: gpt-4o
+    temperature: 1
+    top_p: 1
+    response_format:
+      type: text
+    context: ${scg_graph_expert.output}
+    text: ${inputs.document_contents}
+  provider: AzureOpenAI
+  connection: aoai-dev
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${inputs.update_grounding}
+    is: false
+  use_variants: false
+- name: security_classifier
+  type: llm
+  source:
+    type: code
+    path: security_classifier.jinja2
+  inputs:
+    deployment_name: gpt-4o
+    temperature: 1
+    top_p: 1
+    response_format:
+      type: text
+    secret_expert_recommendation: ${gpt4o_secret_expert.output}
+    source_document: ${inputs.document_contents}
+    top_secret_expert_recommendation: ${gpt4o_top_secret_expert.output}
+    unclass_expert_recommendation: ${gpt4o_unclass_expert.output}
+  provider: AzureOpenAI
+  connection: aoai-dev
+  api: chat
+  module: promptflow.tools.aoai
+  activate:
+    when: ${inputs.update_grounding}
+    is: false
+  use_variants: false
+node_variants: {}
+environment:
+  python_requirements_txt: requirements.txt

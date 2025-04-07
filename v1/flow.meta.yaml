@@ -1,0 +1,10 @@
+$schema: https://azuremlschemas.azureedge.net/latest/flow.schema.json
+name: security_classifier_flow
+display_name: Security Classifier
+type: standard
+path: ./flow.dag.yaml
+description: An agentic flow for classifying documents as Unclassified, Secret, or Top Secret
+properties:
+  promptflow.stage: prod
+  promptflow.section: template
+  promptflow.batch_inputs: samples.json
