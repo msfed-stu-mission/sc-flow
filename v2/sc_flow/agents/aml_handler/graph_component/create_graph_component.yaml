@@ -1,0 +1,19 @@
+# Copyright (c) 2024 Microsoft Corporation.
+# Licensed under the MIT License
+
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: build_scg_graph
+display_name: Build SCG Knowledge Graph
+description: Use GPT-4o to construct an entity-relationship graph from a Security Classification Guide
+version: 1
+inputs:
+  scg_dataset:
+    type: uri_file
+outputs: {}
+code: ./
+command: >
+  python -c "from create_graph import create_graph; create_graph('${{inputs.scg_dataset}}')"
+environment:
+  image: ""

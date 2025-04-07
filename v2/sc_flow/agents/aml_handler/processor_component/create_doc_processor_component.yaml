@@ -1,0 +1,17 @@
+# Copyright (c) 2024 Microsoft Corporation.
+# Licensed under the MIT License
+
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+type: command
+
+name: process_and_ingest_document
+display_name: Ingest a Document
+description: Ingest a document and store the resulting processed chunks in Azure AI Search for RAG usage 
+version: 1
+inputs: {}
+outputs: {}
+code: ./
+command: >
+  python -c "from process_doc import process_doc; process_doc()"
+environment:
+  image: ""
